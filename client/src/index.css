@@ -163,11 +163,22 @@ body {
 }
 
 /* ── Age Distribution Grid ──────────────────────────────── */
+.total-members-display {
+  padding: 8px 12px;
+  background: var(--primary-lt);
+  border: 1.5px solid #BEE3F8;
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: .01em;
+}
+
 .age-dist-grid { display: flex; flex-direction: column; gap: 6px; }
 
 .age-grid-header {
   display: grid;
-  grid-template-columns: 52px 56px 1fr;
+  grid-template-columns: 60px 1fr;
   gap: 8px;
   font-size: .7rem;
   font-weight: 700;
@@ -181,7 +192,7 @@ body {
 
 .age-grid-row {
   display: grid;
-  grid-template-columns: 52px 56px 1fr;
+  grid-template-columns: 60px 1fr;
   gap: 8px;
   align-items: center;
 }

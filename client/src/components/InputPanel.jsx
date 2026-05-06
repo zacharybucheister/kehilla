@@ -5,10 +5,11 @@ import { BRACKETS } from '../utils/projection'
 const TOOLTIPS = {
   currentFamilies: 'The number of member families in your community right now.',
   avgMembersPerFamily: 'On average, how many people belong to each family today (adults + children).',
-  avgMembersPerJoiningFamily: 'How many members the typical new joining family brings. Usually smaller than the community average as new families tend to be younger.',
-  ageDist: 'How your community is spread across age groups today. Enter a % for each bracket — values will be normalised if they don\'t sum to 100.',
+  totalCurrentMembers: 'Calculated from families × average members. Use this as your target when filling in the age distribution below.',
+  ageDist: 'How many members are in each age group today. The total should match your total current members above.',
   joiningPerYear: 'How many new families you expect to affiliate each year, on average.',
   leavingPerYear: 'How many families you expect to leave or lapse each year, on average.',
+  avgMembersPerJoiningFamily: 'How many members the typical new joining family brings. Usually smaller than the community average as new families tend to be younger.',
   horizonYears: 'How many years into the future to project.',
 }
 
@@ -30,13 +31,14 @@ export default function InputPanel({ inputs, onChange }) {
   const setAgeDist = (bracket, value) => {
     onChange(prev => ({
       ...prev,
-      ageDist: { ...prev.ageDist, [bracket]: value },
+      ageDist: { ...prev.ageDist, [bracket]: Number(value) },
     }))
   }
 
-  const totalMembers = Math.round(Number(inputs.currentFamilies) * Number(inputs.avgMembersPerFamily))
-  const distTotal = Math.round(Object.values(inputs.ageDist).reduce((s, v) => s + Number(v), 0))
-  const distOk = distTotal === 100
+  const totalCurrentMembers = Math.round(Number(inputs.currentFamilies) * Number(inputs.avgMembersPerFamily))
+  const distSum = BRACKETS.reduce((s, b) => s + (Number(inputs.ageDist[b]) || 0), 0)
+  const distDiff = distSum - totalCurrentMembers
+  const distOk = distDiff === 0
 
   return (
     <aside className="input-panel">
@@ -57,7 +59,7 @@ export default function InputPanel({ inputs, onChange }) {
           />
         </Field>
 
-        {/* Avg members */}
+        {/* Avg members per family */}
         <Field label="Average members per family" tooltip={TOOLTIPS.avgMembersPerFamily}>
           <input
             type="number"
@@ -68,33 +70,35 @@ export default function InputPanel({ inputs, onChange }) {
           />
         </Field>
 
-        {/* Initial age distribution */}
-        <Field label="Initial age distribution (%)" tooltip={TOOLTIPS.ageDist}>
+        {/* Total current members — read only */}
+        <Field label="Total current members" tooltip={TOOLTIPS.totalCurrentMembers}>
+          <div className="total-members-display">
+            {totalCurrentMembers.toLocaleString()}
+          </div>
+        </Field>
+
+        {/* Initial age distribution — member counts */}
+        <Field label="Initial age distribution (#)" tooltip={TOOLTIPS.ageDist}>
           <div className="age-dist-grid">
             <div className="age-grid-header">
               <span>Age group</span>
-              <span className="age-grid-pct-head">%</span>
               <span className="age-grid-members-head">Members</span>
             </div>
-            {BRACKETS.map(bracket => {
-              const pct = Number(inputs.ageDist[bracket]) || 0
-              const members = Math.round(totalMembers * pct / 100)
-              return (
-                <div key={bracket} className="age-grid-row">
-                  <span className="age-grid-label">{bracket}</span>
-                  <input
-                    type="number"
-                    className="age-pct-input"
-                    min={0} max={100} step={1}
-                    value={inputs.ageDist[bracket]}
-                    onChange={e => setAgeDist(bracket, e.target.value)}
-                  />
-                  <span className="age-grid-members">{members.toLocaleString()}</span>
-                </div>
-              )
-            })}
+            {BRACKETS.map(bracket => (
+              <div key={bracket} className="age-grid-row">
+                <span className="age-grid-label">{bracket}</span>
+                <input
+                  type="number"
+                  className="age-pct-input"
+                  min={0} max={99999} step={1}
+                  value={inputs.ageDist[bracket]}
+                  onChange={e => setAgeDist(bracket, e.target.value)}
+                />
+              </div>
+            ))}
             <div className={`dist-total ${distOk ? 'ok' : 'warn'}`}>
-              Total: {distTotal}%{!distOk && ' — will be normalised'}
+              Total: {distSum.toLocaleString()} / {totalCurrentMembers.toLocaleString()}
+              {!distOk && ` (${distDiff > 0 ? '+' : ''}${distDiff} — will be normalised)`}
             </div>
           </div>
         </Field>
@@ -122,7 +126,7 @@ export default function InputPanel({ inputs, onChange }) {
         </div>
 
         {/* Avg members per joining family */}
-        <Field label="Avg members per joining family" tooltip={TOOLTIPS.avgMembersPerJoiningFamily}>
+        <Field label="Average members per joining family" tooltip={TOOLTIPS.avgMembersPerJoiningFamily}>
           <input
             type="number"
             className="number-input"

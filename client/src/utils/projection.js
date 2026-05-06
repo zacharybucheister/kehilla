@@ -18,16 +18,17 @@ const AGING_RATES = {
   '50+':   1 / 25,
 }
 
+// Default ageDist is in raw member counts (140 families × 5.5 avg = 770 total)
 export const DEFAULT_INPUTS = {
   currentFamilies: 140,
   avgMembersPerFamily: 5.5,
   avgMembersPerJoiningFamily: 4.5,
   ageDist: {
-    '0–12':  30,
-    '13–17': 10,
-    '18–25': 8,
-    '26–50': 35,
-    '50+':   17,
+    '0–12':  231,
+    '13–17': 77,
+    '18–25': 62,
+    '26–50': 269,
+    '50+':   131,
   },
   joiningPerYear: 4,
   leavingPerYear: 1,
