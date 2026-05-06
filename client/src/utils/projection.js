@@ -8,9 +8,20 @@ export const BRACKET_COLORS = {
   '50+':   '#B45309',
 }
 
+// Fraction of each bracket that ages into the next one per year.
+// Derived from bracket width (years). 50+ uses a 25-year attrition rate.
+const AGING_RATES = {
+  '0–12':  1 / 13,
+  '13–17': 1 / 5,
+  '18–25': 1 / 8,
+  '26–50': 1 / 25,
+  '50+':   1 / 25,
+}
+
 export const DEFAULT_INPUTS = {
   currentFamilies: 140,
   avgMembersPerFamily: 5.5,
+  avgMembersPerJoiningFamily: 4.5,
   ageDist: {
     '0–12':  30,
     '13–17': 10,
@@ -18,60 +29,78 @@ export const DEFAULT_INPUTS = {
     '26–50': 35,
     '50+':   17,
   },
-  joiningPerYear: 8,
-  leavingPerYear: 3,
+  joiningPerYear: 4,
+  leavingPerYear: 1,
   horizonYears: 10,
+}
+
+function normalise(dist) {
+  const total = Object.values(dist).reduce((s, v) => s + Number(v), 0)
+  if (total === 0) return Object.fromEntries(BRACKETS.map(b => [b, 1 / BRACKETS.length]))
+  return Object.fromEntries(BRACKETS.map(b => [b, Number(dist[b]) / total]))
 }
 
 export function project(inputs) {
   const {
     currentFamilies,
     avgMembersPerFamily,
+    avgMembersPerJoiningFamily,
     ageDist,
     joiningPerYear,
     leavingPerYear,
     horizonYears,
   } = inputs
 
-  // Normalise distribution so it always sums to 1
-  const rawTotal = Object.values(ageDist).reduce((s, v) => s + Number(v), 0)
-  const norm = rawTotal === 0 ? 1 : rawTotal
-  const dist = Object.fromEntries(
-    Object.entries(ageDist).map(([k, v]) => [k, Number(v) / norm])
-  )
+  // Normalised initial distribution — used throughout as the inflow profile for new families
+  const initDist = normalise(ageDist)
 
-  const results = []
+  // Initialise bracket populations from year-0 totals
+  const totalStart = Math.round(Number(currentFamilies) * Number(avgMembersPerFamily))
+  let pop = Object.fromEntries(BRACKETS.map(b => [b, totalStart * initDist[b]]))
   let families = Number(currentFamilies)
 
+  const results = []
+
   for (let year = 0; year <= Number(horizonYears); year++) {
-    const totalMembers = Math.round(families * Number(avgMembersPerFamily))
-    const brackets = Object.fromEntries(
-      BRACKETS.map(b => [b, Math.round(totalMembers * (dist[b] ?? 0))])
-    )
-    results.push({ year, families: Math.round(families), totalMembers, brackets })
+    const totalMembers = Math.round(BRACKETS.reduce((s, b) => s + pop[b], 0))
+    results.push({
+      year,
+      families: Math.round(families),
+      totalMembers,
+      brackets: Object.fromEntries(BRACKETS.map(b => [b, Math.round(pop[b])])),
+    })
+
+    // ── Cohort aging ──────────────────────────────────────────
+    const aged = Object.fromEntries(BRACKETS.map(b => [b, pop[b] * AGING_RATES[b]]))
+
+    const next = {
+      '0–12':  pop['0–12']  - aged['0–12'],
+      '13–17': pop['13–17'] - aged['13–17'] + aged['0–12'],
+      '18–25': pop['18–25'] - aged['18–25'] + aged['13–17'],
+      '26–50': pop['26–50'] - aged['26–50'] + aged['18–25'],
+      '50+':   pop['50+']   - aged['50+']   + aged['26–50'],
+      // aged['50+'] exits the system (mortality / permanent departure)
+    }
+
+    // ── New families joining ──────────────────────────────────
+    const inflow = Number(joiningPerYear) * Number(avgMembersPerJoiningFamily)
+    BRACKETS.forEach(b => { next[b] += inflow * initDist[b] })
+
+    // ── Families leaving — remove proportionally from current pop ─
+    const currentTotal = BRACKETS.reduce((s, b) => s + next[b], 0)
+    const outflow = Number(leavingPerYear) * Number(avgMembersPerFamily)
+    if (currentTotal > 0) {
+      BRACKETS.forEach(b => {
+        next[b] -= outflow * (next[b] / currentTotal)
+      })
+    }
+
+    // Clamp negatives
+    BRACKETS.forEach(b => { next[b] = Math.max(0, next[b]) })
+
+    pop = next
     families = Math.max(0, families + Number(joiningPerYear) - Number(leavingPerYear))
   }
 
   return results
-}
-
-// Proportionally scale other sliders so the sum stays at 100
-export function adjustAgeDist(currentDist, changedKey, newValue) {
-  const clamped = Math.max(0, Math.min(100, newValue))
-  const others = BRACKETS.filter(b => b !== changedKey)
-  const otherTotal = others.reduce((s, b) => s + currentDist[b], 0)
-  const remaining = 100 - clamped
-
-  if (otherTotal === 0) {
-    const each = remaining / others.length
-    return Object.fromEntries(BRACKETS.map(b => [b, b === changedKey ? clamped : each]))
-  }
-
-  const scale = remaining / otherTotal
-  return Object.fromEntries(
-    BRACKETS.map(b => [
-      b,
-      b === changedKey ? clamped : Math.round(currentDist[b] * scale * 10) / 10,
-    ])
-  )
 }

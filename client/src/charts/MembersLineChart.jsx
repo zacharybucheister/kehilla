@@ -26,6 +26,42 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
+function LegendLine({ color, dashed }) {
+  return (
+    <svg width="24" height="12" style={{ verticalAlign: 'middle', marginRight: 5 }}>
+      <line
+        x1="0" y1="6" x2="24" y2="6"
+        stroke={color}
+        strokeWidth={dashed ? 1.5 : 2.5}
+        strokeDasharray={dashed ? '6 3' : undefined}
+      />
+    </svg>
+  )
+}
+
+function CustomLegend({ scenarios, showFamilies }) {
+  return (
+    <div className="chart-legend">
+      <span className="legend-item">
+        <LegendLine color="#2C5282" dashed={false} />
+        Members
+      </span>
+      {showFamilies && (
+        <span className="legend-item">
+          <LegendLine color="#2C5282" dashed={true} />
+          Families
+        </span>
+      )}
+      {scenarios.filter(s => s.visible).map((s, i) => (
+        <span key={s.id} className="legend-item">
+          <LegendLine color={SCENARIO_COLORS[i % SCENARIO_COLORS.length]} dashed={true} />
+          {s.name}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export default function MembersLineChart({ data, scenarios, showFamilies }) {
   return (
     <ResponsiveContainer width="100%" height={280}>
@@ -38,9 +74,8 @@ export default function MembersLineChart({ data, scenarios, showFamilies }) {
         />
         <YAxis tick={{ fontSize: 12, fill: '#718096' }} width={55} />
         <Tooltip content={<CustomTooltip />} />
-        <Legend wrapperStyle={{ fontSize: 13 }} />
+        <Legend content={() => <CustomLegend scenarios={scenarios} showFamilies={showFamilies} />} />
 
-        {/* Active scenario */}
         <Line
           type="monotone"
           dataKey="totalMembers"
@@ -56,13 +91,12 @@ export default function MembersLineChart({ data, scenarios, showFamilies }) {
             dataKey="families"
             name="Families"
             stroke="#2C5282"
-            strokeDasharray="5 3"
+            strokeDasharray="6 3"
             strokeWidth={1.5}
             dot={false}
           />
         )}
 
-        {/* Saved scenario overlays */}
         {scenarios.filter(s => s.visible).map((s, i) => (
           <Line
             key={s.id}

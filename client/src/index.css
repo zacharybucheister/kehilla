@@ -162,7 +162,62 @@ body {
   box-shadow: 0 0 0 3px rgba(44,82,130,.15);
 }
 
-/* ── Age Distribution ───────────────────────────────────── */
+/* ── Age Distribution Grid ──────────────────────────────── */
+.age-dist-grid { display: flex; flex-direction: column; gap: 6px; }
+
+.age-grid-header {
+  display: grid;
+  grid-template-columns: 52px 56px 1fr;
+  gap: 8px;
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-lt);
+}
+.age-grid-pct-head, .age-grid-members-head { text-align: right; }
+
+.age-grid-row {
+  display: grid;
+  grid-template-columns: 52px 56px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.age-grid-label {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text-md);
+}
+.age-pct-input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-size: .88rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  text-align: right;
+  transition: border-color .15s, box-shadow .15s;
+  -moz-appearance: textfield;
+}
+.age-pct-input::-webkit-inner-spin-button,
+.age-pct-input::-webkit-outer-spin-button { opacity: 1; }
+.age-pct-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(183,121,31,.15);
+}
+.age-grid-members {
+  text-align: right;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* legacy slider styles kept in case referenced elsewhere */
 .age-dist { display: flex; flex-direction: column; gap: 8px; }
 .age-row { display: flex; align-items: center; gap: 8px; }
 .age-label {
@@ -317,6 +372,22 @@ body {
   cursor: pointer;
 }
 .toggle-label input { accent-color: var(--primary); cursor: pointer; }
+
+/* ── Chart Legend ───────────────────────────────────────── */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  padding: 8px 0 2px;
+  font-size: .82rem;
+  color: var(--text-md);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
 
 /* ── Chart Tooltip ──────────────────────────────────────── */
 .chart-tooltip {
